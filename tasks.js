@@ -19,7 +19,7 @@ function TasksCtrl($scope,$http) {
 
 	if(sessionStorage["audit_new"]){
 		user_cookies=JSON.parse(sessionStorage["audit_new"]);
-		$scope.user=user_cookies.user;
+		$scope.name=user_cookies.name;
 		$scope.priv=user_cookies.priv;
 	}else{
 		window.location="/";
@@ -94,18 +94,21 @@ function TasksCtrl($scope,$http) {
   //隐藏Modal
   	window.onmessage = function(event) {
 		var task=event.data;
-		
+		console.log(task);
 		if(task.id){
 			$scope.$apply(function(){
-				for(var i=0;i<$scope.tasks.length;i++){
+				for(var i=0; i<$scope.tasks.length; i++){
 					if($scope.tasks[i].id===task.id){
-						$scope.tasks[i]=task;
+						$scope.tasks[i] = task; //更新绑定的数据
 						$('#myModal').modal('hide');
 					}
 				}// End of for
 			});	//End of scope.apply
 		}//End of if	
 			
+		if(task.return2List){
+			$("#myModal").modal("hide");
+		} //Hide modal when 'return to list' button click
 	};  //End of OnMessage
 	
 	$scope.logout=function(){
@@ -114,6 +117,7 @@ function TasksCtrl($scope,$http) {
 			console.log($scope.username);
 		}
 	}
+	
   //数据的初始化
   //首先得到整个表的条目数量，取users[user_login].tasksList.length
   //然后根据每页面50，倒排得去服务器取数据

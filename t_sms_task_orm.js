@@ -63,34 +63,47 @@ app.get('/t_sms_task_orm.js',function(req,res){
 
 app.use('/', express.static(__dirname + '/'));
 
-server.listen(9999);
+server.listen(12321);
 
-var itemsPerPage=4;
+var itemsPerPage=10;
 
 //监听来自抓取平台提交的内容,插入数据库
 app.post("/audit2MySQL", function(req, res){
 	var task =  req.body;
 	req.models.sms_task.create([
-	{
+	{ 																//id 1个
 		srcfile			:task.srcfile,
-		send_time_type	:task.send_time_type,
+		send_time_type	:task.sendTimeType,
 		method			:task.method,
-		send_title		:task.send_title,
-		send_o_url		:task.send_o_url,
+		send_title		:task.sendTitle,
+		send_o_url		:task.sendOUrl,
 		content			:task.content,
 		priority		:task.priority,
-		long_title		:task.long_title,
+		long_title		:task.longTitle,
 		jump			:task.jump,
-		qc_type			:task.qc_type,
-		interval_time	:task.interval_time,
-		create_time		:task.create_time,
-		send_time		:task.send_time,
-		num_count		:task.num_count,
+		qc_type			:task.qcType,
+		interval_time	:task.intervalTime,
+		create_time		:task.createTime,
+		send_time		:task.sendTime,
+		num_count		:task.numCount,
 		excfile			:task.excfile,
 		sendfile		:task.sendfile,
 		opadmin			:task.opadmin,
-		op_step			:task.op_step,
-		data_date		:task.data_date
+		op_step			:task.opStep,
+		data_date		:task.dataDate,                           //19
+		//对于JSON中没出现的字段,尤其是status, orm没有按照show create table中显示的DEFAULT去赋值
+		//所以这里需要显式地给JSON中没出现的数据库字段赋其DEFAULT值
+		type			:0,
+		send_s_url		:null,         //本来就是null 可以不设
+		lock_flag		:0,
+		black_filter	:1,
+		flag			:null,         //本来就是null 可以不设
+		del_flag		:0,
+		status			:0,            //非常重要
+		vip				:0,
+		qcfile			:null,         //本来就是null 可以不设
+		audit_time		:null,         //本来就是null 可以不设
+		audit_suggestion:null                                //11个
 	}
 	], function(err, items){
 		res.header("Access-Control-Allow-Origin", "*");
@@ -115,7 +128,7 @@ app.get("/pages", function(req, res){
 
 app.get("/paging", function(req, res){
 		var p=req.param('p'); 
-//		console.log("ppp="+p);
+
 		req.models.sms_task.settings.set("pagination.perpage", itemsPerPage); // default is 20			
 		req.models.sms_task.pages(function (err, pages) {
 		if(p){
@@ -163,7 +176,7 @@ app.post("/login", function(req, res){
 						o.priv=users[0].priv;
 					res.send(JSON.stringify(o));
 				}else{
-					res.send("fail");
+					res.send("Password Error!");
 				}
 			}else{
 				res.send("No User Found ~~");

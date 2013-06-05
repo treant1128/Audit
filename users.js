@@ -20,14 +20,16 @@ function UserCtrl($scope,$http) {
   $scope.verfy_user=function(){
 
    var data={name:$scope.username,password:$scope.password};
-   console.log(data);
+  
    if ($scope.username!="" && $scope.password!="") {
    	console.log("hi.....I am not nulll......");
   	  $http.post('/login',data).success(function(data) {
-  	  		console.log(data);
+ 
 			if(data.priv){
   	  				sessionStorage["audit_new"]=JSON.stringify(data);
     				window.location="auditAdmin.html";
+			}else{
+				alert(data);
 			}
   	  });//end of http post method
   	}//end of if usr and password input textbox not null

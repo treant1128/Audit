@@ -60,4 +60,9 @@ function AuditsCtrl($scope,$http) {
 	  }); //End of Success
   };
   
+	$scope.return2List=function(){
+		var data={};
+		data.return2List=888;
+		window.parent.postMessage(data, '*');
+	}
 }
