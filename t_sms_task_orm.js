@@ -155,7 +155,7 @@ app.post("/login", function(req, res){
 	req.models.users.find({name:na}, function (err, users){
 		if(err){
 			res.send(JSON.stringify({error:err}));
-		}else{console.log(users.length);console.log(users);console.log(users[0]);
+		}else{
 			if(users.length>0){//如果根据name找不到user
 				if(users[0].password==password){
 					var o={};
@@ -165,6 +165,8 @@ app.post("/login", function(req, res){
 				}else{
 					res.send("fail");
 				}
+			}else{
+				res.send("No User Found ~~");
 			}
 		}
 		
