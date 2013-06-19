@@ -65,7 +65,7 @@ app.use('/', express.static(__dirname + '/'));
 
 server.listen(12321);
 
-var itemsPerPage=10;
+var itemsPerPage=3;
 
 //监听来自抓取平台提交的内容,插入数据库
 app.post("/audit2MySQL", function(req, res){
@@ -117,31 +117,93 @@ app.post("/audit2MySQL", function(req, res){
 	})
 });
 
-
-//获取总页数
-app.get("/pages", function(req, res){
-	req.models.sms_task.settings.set("pagination.perpage", itemsPerPage); // default is 20
-	req.models.sms_task.pages(function (err, pages) {
-		res.send(JSON.stringify(pages));
-    });
-});
-
+//获取某一页JSON----3rd
 app.get("/paging", function(req, res){
-		var p=req.param('p'); 
+		var p=req.param('p');
+    var location=req.param('location');
+    console.log("Paging Location="+location);
+
+    var usersToLocation=[];
+
+//根据location找到对应的所有user
+    req.models.users.find({'location':location}, function(err, users){ 
+      if(err){  console.log(err);
+          res.send(err);
+        }else{
+          if(users.length>0){
+            for(var i=0; i<users.length; i++){
+              usersToLocation.push(users[i].name);
+            }  //End of for
+   
+    console.log(usersToLocation);
 
 		req.models.sms_task.settings.set("pagination.perpage", itemsPerPage); // default is 20			
 		req.models.sms_task.pages(function (err, pages) {
-		if(p){
-				req.models.sms_task.page(p).order('id',"Z").run(function (err, tasks) {
-					res.send(JSON.stringify(tasks));
-				});//End of get taasks
-		}else{
-				req.models.sms_task.page(1).order('id',"Z").run(function (err, tasks) {
-					res.send(JSON.stringify(tasks));
-				});//End of get taasks		
-		}
-    });//End of get pages
-});//End of get pages...
+	  	if(!p){
+		    p=1;	
+      }//load the 1st page as default
+     
+      req.models.sms_task.page(p).find({'opadmin':usersToLocation}).order('id', "Z").run(function (err, tasks){
+        console.log('paging中tasks的长度'+tasks.length);
+//        console.log(tasks);
+        res.send(JSON.stringify(tasks));
+
+      });  //End of find && run
+    });  //End of pages
+
+          }  //End of user not err
+        }  //End of find users not err
+      });  //End of find users
+
+
+
+});  //End of get paging tasks...
+
+
+//获取task总页数----4th
+app.get("/pages", function(req, res){
+    var location=req.param('location');
+    console.log('=========i==='+location);
+    var usersToLocation=[];
+
+    //根据location找到对应的所有user
+    req.models.users.find({'location':location}, function(err, users){ 
+      if(err){  console.log(err);
+          res.send(err);
+        }else{
+          if(users.length>0){
+            for(var i=0; i<users.length; i++){
+              usersToLocation.push(users[i].name);
+            }  //End of for
+            console.log(usersToLocation);
+            //暂时发送回再请求
+//            res.send(usersToLocation);
+            req.models.sms_task.find({'opadmin':usersToLocation}, function(err, tasks){
+              if(err){
+                res.send(err);
+              }else{
+                 if(tasks.length>0){
+                  console.log('tasks.length==='+tasks.length);
+                  var pagesToTask=Math.ceil(tasks.length/itemsPerPage);
+                  console.log('pagesToTask===='+pagesToTask);
+                  console.log(res);
+                  res.send(JSON.stringify(pagesToTask));
+                 } 
+             }
+              
+            }); //End of find tasks by usersToLocation
+
+          }  //End of user not err
+        }  //End of find users not err
+      });  //End of find users
+
+});
+
+app.get("/page22", function(req, res){
+    var users=req.param('usersToLocation');
+    res.send('pagesToTask');
+});
+
 
 //find all, deprecated by pagination
 app.get("/findAllSmsTasks", function (req, res) {
@@ -158,6 +220,7 @@ app.get("/findAllSmsTasks", function (req, res) {
 	
 }); //end of get request
 
+//登录验证----1st
 app.post("/login", function(req, res){
 //	console.log("req.body=="+req.body);
 	
@@ -174,6 +237,7 @@ app.post("/login", function(req, res){
 					var o={};
 						o.name=users[0].name;
 						o.priv=users[0].priv;
+            o.location=users[0].location;
 					res.send(JSON.stringify(o));
 				}else{
 					res.send("Password Error!");
@@ -185,7 +249,47 @@ app.post("/login", function(req, res){
 		
 	});  //End of find
 
-}); //End of login get
+}); //End of login HTTP POST
+
+//定位登录用户的location, 找到同location的user进而获取task----2nd
+app.post('/verifyLocation', function(req, res){
+    var location=req.body.location;
+    console.log("地方location是=="+location);
+
+    //find到location对应的所有users
+    req.models.users.find({'location':location}, function(err, users){
+      if(err){
+        res.send(JSON.stringify(err));
+      }else{
+        if(users.length>0){
+          usersToLocation=[]; //清空数组
+          for(var i=0; i<users.length; i++){
+            if(users[i].name){
+              usersToLocation.push(users[i].name);
+            } //if name property exists
+          } //push name to global usersToLocation 
+        console.log(usersToLocation);
+          res.send(usersToLocation);
+ 
+//这里callback嵌套返回值总是空的error,  只能暂时先返回usersToLocation, client再发起一次请求          
+        //find出opadmin字段包含在usersToLocation数组中的task
+//        req.models.sms_task.find({'opadmin':usersToLocation}, function(err, tasks){
+//          if(tasks.length>0){
+//            console.log('tasks.length==='+tasks.length);
+//            pagesToTask=Math.ceil(tasks.length/itemsPerPage);
+//            console.log('pagesToTask===='+pagesToTask);
+//            res.send(pagesToTask);
+//          }
+//          
+//        });
+
+        }else{
+          res.send("Location Invalid!");   
+        }        //End of users exists
+      }       //End of no err
+    });   //End of users.find with location
+
+  });  //End of verifyLocation
 
 app.get("/updateStatus", function(req, res){
 	var id=req.param('id');
